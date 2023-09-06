@@ -6,12 +6,12 @@ use bevy::{
     sprite::MaterialMesh2dBundle,
 };
 
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use rand::Rng;
 
 type Pos = (isize, isize);
-type Cell = HashMap<Pos, bool>; // TODO: Think about using HashSet instead
+type Cell = HashSet<Pos>;
 
 #[derive(Component)]
 struct Cells(Cell);
@@ -30,12 +30,12 @@ impl Cells {
         // let y_range = y..(y + height);
         let mut rng = rand::thread_rng();
 
-        let mut cells: Vec<(Pos, bool)> = Vec::new();
+        let mut cells: Vec<Pos> = Vec::new();
 
-        for n in 0..number {
+        for _n in 0..number {
             let a = rng.gen_range(x..(x + width));
             let b = rng.gen_range(y..(y + height));
-            cells.push(((a, b), true));
+            cells.push((a, b));
         }
 
         // Cells(Cell::from(cells))
@@ -43,34 +43,24 @@ impl Cells {
     }
 
     fn blinker() -> Self {
-        Cells(Cell::from([
-            ((-1, 0), true),
-            ((0, 0), true),
-            ((1, 0), true),
-        ]))
+        Cells(Cell::from([(-1, 0), (0, 0), (1, 0)]))
     }
 
     fn glider() -> Self {
-        Cells(Cell::from([
-            ((-1, 0), true),
-            ((0, 0), true),
-            ((1, 0), true),
-            ((1, -1), true),
-            ((0, -2), true),
-        ]))
+        Cells(Cell::from([(-1, 0), (0, 0), (1, 0), (1, -1), (0, -2)]))
     }
 
     fn pentadecathlon() -> Self {
         Cells(Cell::from([
-            ((0, 0), true),
-            ((0, -1), true),
-            ((1, -1), true),
-            ((1, -2), true),
-            ((3, 0), true),
-            ((6, 0), true),
-            ((6, -1), true),
-            ((6, -2), true),
-            ((7, -1), true),
+            (0, 0),
+            (0, -1),
+            (1, -1),
+            (1, -2),
+            (3, 0),
+            (6, 0),
+            (6, -1),
+            (6, -2),
+            (7, -1),
         ]))
     }
 
@@ -98,15 +88,15 @@ impl Cells {
         let neighbors = self.get_neighbors_keys(key);
 
         // Count neighbors
-        neighbors.iter().map(|k| self.0.contains_key(k) as u8).sum()
+        neighbors.iter().map(|k| self.0.contains(k) as u8).sum()
     }
 }
 
-impl<'a> FromIterator<&'a (Pos, bool)> for Cells {
-    fn from_iter<T: IntoIterator<Item = &'a (Pos, bool)>>(iter: T) -> Self {
+impl<'a> FromIterator<&'a Pos> for Cells {
+    fn from_iter<T: IntoIterator<Item = &'a Pos>>(iter: T) -> Self {
         let mut map = Cells::new();
-        for (k, v) in iter {
-            map.0.insert(*k, *v);
+        for k in iter {
+            map.0.insert(*k);
         }
 
         map
@@ -135,31 +125,31 @@ fn update_world(mut q_cells: Query<&mut Cells>) {
     // Create list of all cells to check
     let cells_to_check: Vec<Pos> = cells
         .0
-        .keys()
+        .iter()
         .map(|k| cells.get_self_and_neighbors_keys(k))
         .flatten()
         .collect();
 
     // Loop over all live cells
     for key in &cells_to_check {
-        if checked_cells.0.contains_key(&key) {
+        if checked_cells.0.contains(&key) {
             continue;
         }
 
         // Add current cell to checked_cells
-        checked_cells.0.insert(*key, true);
+        checked_cells.0.insert(*key);
 
-        let count = cells.count_neighbors(key);
-        let alive = *cells.0.get(&key).unwrap_or(&false);
+        let count = cells.count_neighbors(&key);
+        let alive = cells.0.contains(&key);
 
         // println!("{:?} = {}", key, count);
 
         if alive && (count == 2 || count == 3) {
             // Stay alive
-            next_cells.0.insert(*key, true);
+            next_cells.0.insert(*key);
         } else if !alive && count == 3 {
             // Come alive
-            next_cells.0.insert(*key, true);
+            next_cells.0.insert(*key);
         } // else if (alive || !alive) { // die or stay dead }
     }
 
@@ -188,7 +178,7 @@ fn render_cells(
     // TODO: This can panic!
     let cells = q_cells.single();
 
-    for k in cells.0.keys() {
+    for k in cells.0.iter() {
         let x = k.0 as f32;
         let y = k.1 as f32;
 
