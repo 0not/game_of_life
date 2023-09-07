@@ -29,92 +29,6 @@ impl CellSet {
         CellSet(CellSetType::new())
     }
 
-    #[allow(dead_code)]
-    pub fn random(number: usize, extents: (Int, Int, Int, Int)) -> Self {
-        let (x, y, width, height) = extents;
-        let mut rng = rand::thread_rng();
-
-        let mut cells = CellSetType::new();
-
-        for _n in 0..number {
-            let a = rng.gen_range(x..(x + width));
-            let b = rng.gen_range(y..(y + height));
-            cells.insert((a, b));
-        }
-
-        CellSet(cells)
-    }
-
-    #[allow(dead_code)]
-    pub fn solid_rect(extents: (Int, Int, Int, Int)) -> Self {
-        let (x, y, width, height) = extents;
-
-        let mut cells = CellSetType::new();
-
-        for ix in x..(x + width) {
-            for iy in y..(y + height) {
-                cells.insert((ix, iy));
-            }
-        }
-
-        CellSet(cells)
-    }
-
-    /// Create a hollow rectangle. I don't know if there is a use case for this,
-    /// since all internal cells will die from overpopulation anyway.
-    #[allow(dead_code)]
-    pub fn hollow_rect(wall_thick: Int, extents: (Int, Int, Int, Int)) -> Self {
-        let (x, y, width, height) = extents;
-
-        let mut cells = CellSetType::new();
-        let mut cells_inner = CellSetType::new();
-
-        for ix in x..(x + width) {
-            for iy in y..(y + height) {
-                cells.insert((ix, iy));
-            }
-        }
-
-        for ix in (x + wall_thick)..(x + width - wall_thick) {
-            for iy in (y + wall_thick)..(y + height - wall_thick) {
-                cells_inner.insert((ix, iy));
-            }
-        }
-
-        CellSet(cells.difference(&cells_inner).map(|c| *c).collect())
-    }
-
-    #[allow(dead_code)]
-    pub fn blinker() -> Self {
-        CellSet(CellSetType::from([(-1, 0), (0, 0), (1, 0)]))
-    }
-
-    #[allow(dead_code)]
-    pub fn glider() -> Self {
-        CellSet(CellSetType::from([
-            (-1, 0),
-            (0, 0),
-            (1, 0),
-            (1, -1),
-            (0, -2),
-        ]))
-    }
-
-    #[allow(dead_code)]
-    fn pentadecathlon() -> Self {
-        CellSet(CellSetType::from([
-            (0, 0),
-            (0, -1),
-            (1, -1),
-            (1, -2),
-            (3, 0),
-            (6, 0),
-            (6, -1),
-            (6, -2),
-            (7, -1),
-        ]))
-    }
-
     pub fn get_neighbors_keys(&self, key: &Pos) -> CellSetType {
         let (x, y) = *key;
         CellSetType::from([
@@ -176,5 +90,135 @@ impl CellSet {
 
         // Replace existing cells with next generation
         next_cells
+    }
+}
+
+pub struct CellSetBuilder {
+    draft: CellSetType,
+    committed: CellSetType,
+}
+
+impl CellSetBuilder {
+    pub fn new() -> Self {
+        Self {
+            draft: CellSetType::new(),
+            committed: CellSetType::new(),
+        }
+    }
+
+    pub fn commit(mut self) -> Self {
+        self.committed = self.committed.union(&self.draft).map(|c| *c).collect();
+        self.draft = CellSetType::new();
+        self
+    }
+
+    pub fn build(mut self) -> CellSet {
+        self = self.commit();
+        CellSet(self.committed)
+    }
+
+    pub fn translate(mut self, trans_vec: Pos) -> Self {
+        let (x, y) = trans_vec;
+        self.draft = self.draft.iter().map(|c| (c.0 + x, c.1 + y)).collect();
+        self
+    }
+
+    // TODO: Add support for rotations
+    #[allow(dead_code)]
+    pub fn glider(mut self) -> Self {
+        self = self.commit();
+
+        self.draft = CellSetType::from([(-1, 0), (0, 0), (1, 0), (1, -1), (0, -2)]);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn blinker(mut self) -> Self {
+        self = self.commit();
+
+        self.draft = CellSetType::from([(-1, 0), (0, 0), (1, 0)]);
+        self
+    }
+
+    #[allow(dead_code)]
+    fn pentadecathlon(mut self) -> Self {
+        self = self.commit();
+
+        self.draft = CellSetType::from([
+            (0, 0),
+            (0, -1),
+            (1, -1),
+            (1, -2),
+            (3, 0),
+            (6, 0),
+            (6, -1),
+            (6, -2),
+            (7, -1),
+        ]);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn random(mut self, number: usize, dim: Pos) -> Self {
+        let (width, height) = dim;
+        let mut rng = rand::thread_rng();
+
+        let mut cells = CellSetType::new();
+
+        for _n in 0..number {
+            let a = rng.gen_range(0..width);
+            let b = rng.gen_range(0..height);
+            cells.insert((a, b));
+        }
+
+        self = self.commit();
+
+        self.draft = cells;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn solid_rect(mut self, dim: Pos) -> Self {
+        let (width, height) = dim;
+
+        let mut cells = CellSetType::new();
+
+        for ix in 0..width {
+            for iy in 0..height {
+                cells.insert((ix, iy));
+            }
+        }
+
+        self = self.commit();
+
+        self.draft = cells;
+        self
+    }
+
+    /// Create a hollow rectangle. I don't know if there is a use case for this,
+    /// since all internal cells will die from overpopulation anyway.
+    #[allow(dead_code)]
+    pub fn hollow_rect(mut self, wall_thick: Int, dim: Pos) -> Self {
+        let (width, height) = dim;
+
+        let mut cells = CellSetType::new();
+        let mut cells_inner = CellSetType::new();
+
+        for ix in 0..width {
+            for iy in 0..height {
+                cells.insert((ix, iy));
+            }
+        }
+
+        for ix in wall_thick..(width - wall_thick) {
+            for iy in (wall_thick)..(height - wall_thick) {
+                cells_inner.insert((ix, iy));
+            }
+        }
+
+        self = self.commit();
+
+        self.draft = cells.difference(&cells_inner).map(|c| *c).collect();
+        self
     }
 }

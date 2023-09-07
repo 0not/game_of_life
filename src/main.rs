@@ -8,7 +8,7 @@ use bevy::{
 };
 
 pub mod life;
-use life::{CellSet, CellSetType};
+use life::{CellSet, CellSetBuilder, CellSetType};
 
 #[derive(Resource)]
 struct CellStyle {
@@ -102,10 +102,20 @@ fn setup(
 }
 
 fn init_cells(mut commands: Commands) {
-    // commands.spawn(Cells::glider());
-    // commands.spawn(Cells::random(5000, (-120, -67, 240, 135)));
-    commands.spawn(Cells(CellSet::solid_rect((-50, -50, 100, 100))));
-    // commands.spawn(Cells::hollow_rect(2, (-50, -50, 100, 100)));
+    commands.spawn::<Cells>(
+        CellSetBuilder::new()
+            .glider()
+            .translate((10, 0))
+            .glider()
+            .glider()
+            .translate((10, 10))
+            .random(1000, (100, 100))
+            .translate((-200, 0))
+            .hollow_rect(2, (100, 10))
+            .translate((0, -100))
+            .build()
+            .into(),
+    );
 }
 
 fn main() {
@@ -115,7 +125,7 @@ fn main() {
                 primary_window: Some(Window {
                     resizable: false,
                     mode: bevy::window::WindowMode::BorderlessFullscreen,
-                    present_mode: PresentMode::Immediate,
+                    // present_mode: PresentMode::Immediate,
                     ..Default::default()
                 }),
                 ..Default::default()
