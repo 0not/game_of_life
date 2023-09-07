@@ -12,7 +12,8 @@ use std::collections::HashSet;
 use rand::Rng;
 use rayon::prelude::*;
 
-type Pos = (isize, isize);
+type Int = i32;
+type Pos = (Int, Int);
 type CellType = HashSet<Pos>;
 
 #[derive(Resource)]
@@ -35,7 +36,7 @@ impl Cells {
     }
 
     #[allow(dead_code)]
-    fn random(number: usize, extents: (isize, isize, isize, isize)) -> Self {
+    fn random(number: usize, extents: (Int, Int, Int, Int)) -> Self {
         let (x, y, width, height) = extents;
         // let x_range = x..(x + width);
         // let y_range = y..(y + height);
@@ -53,7 +54,7 @@ impl Cells {
     }
 
     #[allow(dead_code)]
-    fn solid_rect(extents: (isize, isize, isize, isize)) -> Self {
+    fn solid_rect(extents: (Int, Int, Int, Int)) -> Self {
         let (x, y, width, height) = extents;
 
         let mut cells = CellType::new();
@@ -70,7 +71,7 @@ impl Cells {
     /// Create a hollow rectangle. I don't know if there is a use case for this,
     /// since all internal cells will die from overpopulation anyway.
     #[allow(dead_code)]
-    fn hollow_rect(wall_thick: isize, extents: (isize, isize, isize, isize)) -> Self {
+    fn hollow_rect(wall_thick: Int, extents: (Int, Int, Int, Int)) -> Self {
         let (x, y, width, height) = extents;
 
         let mut cells = CellType::new();
@@ -254,9 +255,9 @@ fn setup(
 }
 
 fn init_cells(mut commands: Commands) {
-    // commands.spawn(Cells::pentadecathlon());
+    // commands.spawn(Cells::glider());
     // commands.spawn(Cells::random(5000, (-120, -67, 240, 135)));
-    commands.spawn(Cells::solid_rect((-100, -50, 200, 100)));
+    commands.spawn(Cells::solid_rect((-50, -50, 100, 100)));
     // commands.spawn(Cells::hollow_rect(2, (-50, -50, 100, 100)));
 }
 
