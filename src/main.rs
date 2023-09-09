@@ -67,6 +67,15 @@ fn render_cells(mut commands: Commands, cell_style: Res<CellStyle>, q_cells: Que
         let x = k.0 as f32;
         let y = k.1 as f32;
 
+        // Quick hack to improve rendering time:
+        // Don't spawn cell if not visible.
+        // (This didn't seem to help, indicating that, in my test of 1000x1000
+        // solid rectangle, the slowdown is in the life code, not the bevy code.)
+        // TODO: Implement this properly using Camera details
+        if x > 1920. / 8. || x < -1920. / 8. || y > 1080. / 8. || y < -1080. / 8. {
+            continue;
+        }
+
         commands.spawn((
             VisibleCell,
             MaterialMesh2dBundle {
@@ -102,17 +111,24 @@ fn setup(
 }
 
 fn init_cells(mut commands: Commands) {
+    // commands.spawn::<Cells>(
+    //     CellSetBuilder::new()
+    //         .glider()
+    //         .translate((10, 0))
+    //         .glider()
+    //         .glider()
+    //         .translate((10, 10))
+    //         .random(1000, (100, 100))
+    //         .translate((-200, 0))
+    //         .hollow_rect(2, (100, 10))
+    //         .translate((0, -100))
+    //         .build()
+    //         .into(),
+    // );
+
     commands.spawn::<Cells>(
         CellSetBuilder::new()
-            .glider()
-            .translate((10, 0))
-            .glider()
-            .glider()
-            .translate((10, 10))
-            .random(1000, (100, 100))
-            .translate((-200, 0))
-            .hollow_rect(2, (100, 10))
-            .translate((0, -100))
+            .solid_rect((1000, 1000))
             .build()
             .into(),
     );
@@ -125,7 +141,7 @@ fn main() {
                 primary_window: Some(Window {
                     resizable: false,
                     mode: bevy::window::WindowMode::BorderlessFullscreen,
-                    // present_mode: PresentMode::Immediate,
+                    present_mode: PresentMode::Immediate,
                     ..Default::default()
                 }),
                 ..Default::default()
