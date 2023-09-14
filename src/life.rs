@@ -58,15 +58,13 @@ impl CellSet {
 
     pub fn update_cells(&self) -> Self {
         // Create list of all cells to check
-        let cells_to_check: CellSetType = self
+        let cells_to_check = self
             .par_iter()
             .map(|k| self.get_self_and_neighbors_keys(k))
-            .flatten()
-            .collect();
+            .flatten();
 
         // Loop over all live cells and their neighbors
         let next_live_cells: CellSetType = cells_to_check
-            .par_iter()
             .map(|key| {
                 let count = self.count_neighbors(&key);
                 let alive = self.contains(&key);
@@ -74,10 +72,10 @@ impl CellSet {
                 // The three rules of Game of Life
                 return if alive && (count == 2 || count == 3) {
                     // Stay alive
-                    Some(*key)
+                    Some(key)
                 } else if !alive && count == 3 {
                     // Come alive
-                    Some(*key)
+                    Some(key)
                 } else {
                     None
                 };
