@@ -72,6 +72,7 @@ fn render_cells(mut commands: Commands, cell_style: Res<CellStyle>, q_cells: Que
         // (This didn't seem to help, indicating that, in my test of 1000x1000
         // solid rectangle, the slowdown is in the life code, not the bevy code.)
         // TODO: Implement this properly using Camera details
+        // No need to spawn cells that are not visible
         if x > 1920. / 8. || x < -1920. / 8. || y > 1080. / 8. || y < -1080. / 8. {
             continue;
         }
@@ -126,12 +127,22 @@ fn init_cells(mut commands: Commands) {
     //         .into(),
     // );
 
-    commands.spawn::<Cells>(
-        CellSetBuilder::new()
-            .solid_rect((1000, 1000))
-            .build()
-            .into(),
-    );
+    let mut builder = CellSetBuilder::new();
+
+    for x in -25..25 {
+        for y in -25..25 {
+            builder = builder.glider().translate((5 * x, 5 * y));
+        }
+    }
+
+    commands.spawn::<Cells>(builder.build().into());
+
+    // commands.spawn::<Cells>(
+    //     CellSetBuilder::new()
+    //         .solid_rect((1000, 1000))
+    //         .build()
+    //         .into(),
+    // );
 }
 
 fn main() {
@@ -141,7 +152,7 @@ fn main() {
                 primary_window: Some(Window {
                     resizable: false,
                     mode: bevy::window::WindowMode::BorderlessFullscreen,
-                    present_mode: PresentMode::Immediate,
+                    // present_mode: PresentMode::Immediate,
                     ..Default::default()
                 }),
                 ..Default::default()
